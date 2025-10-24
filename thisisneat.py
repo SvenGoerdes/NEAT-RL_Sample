@@ -12,7 +12,7 @@ import pickle
 import neat
 import numpy as np
 #import cart_pole
-import gym
+import gymnasium as gym
 
 
 
@@ -27,15 +27,26 @@ def eval_genome(genome, config):
     fitnesses = []
 
     for runs in range(runs_per_net):
-        env = gym.make("BipedalWalker-v3")
+        env = gym.make("Acrobot-v1")
 
-        observation = env.reset()
+        observation, _ = env.reset()
         fitness = 0.0
-        done = False
-        while not done:
+        terminated = False
+        truncated = False
+        while not terminated and not truncated:
+            # Network output -> discrete action for Acrobot (0, 1, or 2)
+            output = net.activate(observation)
+            if len(output) == 3:
+                action = int(np.argmax(output))
+            elif len(output) == 1:
+                # Map single output in [-inf, inf] to 3 bins {0,1,2}
+                x = output[0]
+                action = int(np.digitize([x], [-0.33, 0.33])[0])
+            else:
+                # Fallback: use argmax over whatever outputs exist
+                action = int(np.argmax(output))
 
-            action = net.activate(observation)
-            observation, reward, done, info = env.step(action)
+            observation, reward, terminated, truncated, info = env.step(action)
             fitness += reward
 
         fitnesses.append(fitness)

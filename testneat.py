@@ -1,7 +1,7 @@
 import os
 import pickle
 import neat
-import gym 
+import gymnasium as gym
 import numpy as np
 
 # load the winner
@@ -22,13 +22,21 @@ config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
 net = neat.nn.FeedForwardNetwork.create(c, config)
 
 
-env = gym.make("BipedalWalker-v3")
-observation = env.reset()
+env = gym.make("Acrobot-v1", render_mode="human")
+observation, info = env.reset()
 
-done = False
-while not done:
-    action = net.activate(observation)
+terminated = False
+truncated = False
+while not terminated and not truncated:
+    output = net.activate(observation)
+    if len(output) == 3:
+        action = int(np.argmax(output))
+    elif len(output) == 1:
+        x = output[0]
+        action = int(np.digitize([x], [-0.33, 0.33])[0])
+    else:
+        action = int(np.argmax(output))
 
-    observation, reward, done, info = env.step(action)
+    observation, reward, terminated, truncated, info = env.step(action)
     env.render()
 
